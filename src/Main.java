@@ -21,7 +21,7 @@ public class Main extends JPanel
         Node goal = new Node( (int)(.85 * XMAX), YMAX - (int)(.92 * YMAX) );
         Node start = new Node( (int)(.16 * XMAX), YMAX - (int)(.15 * YMAX) );
 
-        ArrayList<Node> space = new ArrayList<>();
+        Node[][] space = new Node[XMAX][YMAX];
         for(int i = 0; i<XMAX; i++){
             for(int j=0; j<YMAX; j++){
                 boolean valid = true;
@@ -32,7 +32,18 @@ public class Main extends JPanel
                     }
                 }
                 if(valid) {
-                    space.add(new Node(i,j));
+                    Node newNode = new Node(i,j);
+                    newNode.setGoalDistance(goal);
+                    newNode.setStartDistance(start);
+                    space[i][j] = newNode;
+                    if(i > 0 && space[i-1][j]!=null){
+                        newNode.west = space[i-1][j];
+                        space[i-1][j].east = newNode;
+                    }
+                    if (j > 0 && space[i][j-1]!=null) {
+                        newNode.south = space[i][j-1];
+                        space[i][j-1].north = newNode;
+                    }
                 }
                 valid = true;
             }
