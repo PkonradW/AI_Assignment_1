@@ -8,6 +8,10 @@ public class Node {
 
     private double goalDistance;
     private double startDistance;
+    public double evaluation;
+
+    boolean isStart = false;
+    boolean isGoal = false;
 
     Node north = null;
     Node south = null;

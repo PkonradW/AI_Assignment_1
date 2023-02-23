@@ -35,6 +35,17 @@ public class Main extends JPanel
                     Node newNode = new Node(i,j);
                     newNode.setGoalDistance(goal);
                     newNode.setStartDistance(start);
+                    newNode.evaluation = newNode.getStartDistance() + newNode.getGoalDistance();
+                    if (newNode.getX() == goal.getX()
+                            && newNode.getY() == goal.getY() ) {
+                        newNode.isGoal = true;
+                        goal = newNode;
+                    }
+                    if (newNode.getX() == start.getX()
+                            && newNode.getY() == start.getY() ) {
+                        newNode.isStart = true;
+                        start = newNode;
+                    }
                     space[i][j] = newNode;
                     if(i > 0 && space[i-1][j]!=null){
                         newNode.west = space[i-1][j];
@@ -52,6 +63,26 @@ public class Main extends JPanel
         frame.setSize( 1000, 500 ); // set frame size
         frame.setVisible( true ); // display frame
     } // end main
+    public static void Search(Node[][] space, Node start, Node goal) {
+        double g = 0; // cost so far to reach node
+        double f; // estimated total path through n to goal
+        double h; // estimated cost of path to goal
+        Node current;
+        Node previous;
+
+        current = start;
+        h = current.evaluation;
+        f = h;
+        ArrayList<Node> path;
+        while (current != goal) {
+            if (current.north.evaluation < current.south.evaluation
+            && current.north.evaluation < current.east.evaluation
+            && current.north.evaluation < current.west.evaluation) {
+
+            }
+        }
+
+    }
     public static ArrayList<Polygon> makePolyList() {
         ArrayList<Polygon> polyList = new ArrayList<>();
 
