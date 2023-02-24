@@ -5,6 +5,7 @@ import java.lang.Math;
 public class Node {
     private int x;
     private int y;
+    String xyString;
 
     private double goalDistance;
     private double startDistance;
@@ -17,10 +18,16 @@ public class Node {
     Node south = null;
     Node east = null;
     Node west = null;
+    Node northEast = null;
+    Node northWest = null;
+    Node southEast = null;
+    Node southWest = null;
+    Node parent = null;
 
     public Node(int xp, int yp) {
         setX(xp);
         setY(yp);
+        xyString = Integer.toString(xp) + Integer.toString(yp);
     }
     public double getGoalDistance() {
         return goalDistance;
@@ -46,6 +53,8 @@ public class Node {
         this.startDistance = Math.sqrt( (dx*dx) + (dy*dy) );
     }
 
+    public Node getParent() { return parent; }
+    public void setParent(Node parent) { this.parent = parent;}
     public int getX() {
         return x;
     }

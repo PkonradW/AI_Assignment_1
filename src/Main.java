@@ -1,7 +1,6 @@
 import java.awt.Graphics;
 import java.awt.Polygon;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
+import java.util.*;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -13,10 +12,9 @@ public class Main extends JPanel
     public static void main(String[] args)
     {
         // create frame for PolygonsJPanel
-        JFrame frame = new JFrame( "Drawing Polygons" );
+        JFrame frame = new JFrame( "A* Path Finding" );
         frame.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
         ArrayList<Polygon> polygonArrayList = makePolyList();
-        PolygonsJPanel polygonsJPanel = new PolygonsJPanel(polygonArrayList, XMAX, YMAX);
 
         Node goal = new Node( (int)(.85 * XMAX), YMAX - (int)(.92 * YMAX) );
         Node start = new Node( (int)(.16 * XMAX), YMAX - (int)(.15 * YMAX) );
@@ -35,7 +33,7 @@ public class Main extends JPanel
                     Node newNode = new Node(i,j);
                     newNode.setGoalDistance(goal);
                     newNode.setStartDistance(start);
-                    newNode.evaluation = newNode.getStartDistance() + newNode.getGoalDistance();
+                    //newNode.evaluation = newNode.getStartDistance() + newNode.getGoalDistance();
                     if (newNode.getX() == goal.getX()
                             && newNode.getY() == goal.getY() ) {
                         newNode.isGoal = true;
@@ -59,29 +57,141 @@ public class Main extends JPanel
                 valid = true;
             }
         }
+//        for (Node[] nArray : space) {
+//            for (Node n : nArray) {
+//                if (n != null) {
+//                    if (n.north != null) {
+//                        if (n.north.east != null) n.northEast = n.north.east;
+//                        if (n.north.west != null) n.northWest = n.north.west;
+//                    }
+//                    if (n.south != null) {
+//                        if (n.south.east != null) n.southEast = n.south.east;
+//                        if (n.south.west != null) n.southWest = n.south.west;
+//                    }
+//                }
+//            }
+//        }
+        System.out.println("done making space");
+        ArrayList<Node> path = aStarSearch(start,goal);
+        //PolyLinesJPanel polyLines = new PolyLinesJPanel(path);
+        PolygonsJPanel polygonsJPanel = new PolygonsJPanel(polygonArrayList, XMAX, YMAX, path);
         frame.add( polygonsJPanel ); // add polygonsJPanel to frame
+        //frame.add( polyLines );
         frame.setSize( 1000, 500 ); // set frame size
         frame.setVisible( true ); // display frame
     } // end main
-    public static void Search(Node[][] space, Node start, Node goal) {
-        double g = 0; // cost so far to reach node
-        double f; // estimated total path through n to goal
-        double h; // estimated cost of path to goal
-        Node current;
-        Node previous;
 
-        current = start;
-        h = current.evaluation;
-        f = h;
-        ArrayList<Node> path;
-        while (current != goal) {
-            if (current.north.evaluation < current.south.evaluation
-            && current.north.evaluation < current.east.evaluation
-            && current.north.evaluation < current.west.evaluation) {
+    public static ArrayList<Node> aStarSearch(Node start, Node goal) {
+        ArrayList<Node> frontier = new ArrayList<>();
+        // key is Node.xyString, value is cost
+        Hashtable<String, Double> visited = new Hashtable<>();
+        int gcost = 0;
 
+        frontier.add(start);
+
+        while (!frontier.isEmpty()) {
+            Node current = getLowestEvaluation(frontier);
+            frontier.remove(current);
+            if (current.isGoal) {
+                return reconstructPath(current);
+            }
+            gcost++;
+            ArrayList<Node> neighbors = getNeighbors(current);
+            for (Node child:
+                 neighbors) {
+                double f = child.getGoalDistance() + gcost;
+                if (!visited.containsKey(child.xyString)
+                        || f < visited.get(child.xyString)) {
+                    visited.put(child.xyString, f);
+                    visited.replace(child.xyString, f);
+                    child.setParent(current);
+                    child.evaluation = f;
+                    frontier.add(child);
+                }
             }
         }
 
+        return null;
+    }
+    public static ArrayList<Node> aSearch(Node start, Node goal) {
+        ArrayList<Node> openList = new ArrayList<Node>();
+        ArrayList<Node> closedList = new ArrayList<Node>();
+
+        double gCost = 0;
+
+        start.evaluation = start.getGoalDistance();
+
+        openList.add(start);
+
+        while(!openList.isEmpty()) {
+            Node currentNode = getLowestEvaluation(openList);
+            if (currentNode.isGoal) {
+                return reconstructPath(currentNode);
+            }
+
+            openList.remove(currentNode);
+            System.out.println("size of openList: " + openList.size());
+            System.out.println("size of closedList" + closedList.size());
+            closedList.add(currentNode);
+
+            ArrayList<Node> neighbors = getNeighbors(currentNode);
+            if (neighbors.contains(null)) {
+                System.out.println("suffering");
+            }
+            for (Node neighbor : neighbors) {
+                if (neighbor != null) {
+                    if (!openList.contains(neighbor)) {
+                        openList.add(neighbor);
+                        neighbor.evaluation = gCost + 1 + neighbor.getGoalDistance();
+                        neighbor.setParent(currentNode);
+                    } else if (neighbor.evaluation > gCost + 1 + neighbor.getGoalDistance()) {
+                        neighbor.evaluation = gCost + 1 + neighbor.getGoalDistance();
+                        neighbor.setParent(currentNode);
+                    }
+                }
+            }
+            neighbors.clear();
+            gCost++;
+        }
+        System.out.println("something went wrong");
+        return null;
+    }
+    public static Node getLowestEvaluation(ArrayList<Node> list) {
+        Node lowest = list.get(0);
+        for (Node node : list) {
+            if (node.evaluation < lowest.evaluation) {
+                lowest = node;
+            }
+        }
+        return lowest;
+    }
+
+    public static ArrayList<Node> reconstructPath(Node node) {
+        ArrayList<Node> path = new ArrayList<Node>();
+        int i = 0;
+        while (node.isStart != true) {
+            path.add(node);
+            node = node.getParent();
+            System.out.println(i++);
+        }
+        path.add(node);
+        System.out.println(path);
+        return path;
+    }
+
+    public static ArrayList<Node> getNeighbors(Node node) {
+        ArrayList<Node> neighbors = new ArrayList<Node>();
+
+        if (node.north != null) neighbors.add(node.north);
+        if (node.south != null) neighbors.add(node.south);
+        if (node.east != null) neighbors.add(node.east);
+        if (node.west != null) neighbors.add(node.west);
+//        if (node.northWest != null) neighbors.add(node.northWest);
+//        if (node.northEast != null) neighbors.add(node.northEast);
+//        if (node.southWest != null) neighbors.add(node.southWest);
+//        if (node.southEast != null) neighbors.add(node.southWest);
+
+        return neighbors;
     }
     public static ArrayList<Polygon> makePolyList() {
         ArrayList<Polygon> polyList = new ArrayList<>();
@@ -148,23 +258,61 @@ public class Main extends JPanel
 }
 
 // draw polygons and polylines
+class PolyLinesJPanel extends JPanel {
+    ArrayList<Node> nodesList;
+    int[] xPoints;
+    int[] yPoints;
+    int nPoints;
+    public PolyLinesJPanel(ArrayList<Node> nodes) {
+        this.nodesList = nodes;
+        this.nPoints = nodes.size();
+        this.xPoints = new int[nodesList.size()];
+        this.yPoints = new int[nodesList.size()];
+        fillArrays(nodesList);
+    }
+    public void fillArrays(ArrayList<Node> nodes) {
+        for (int i = 0; i<nodes.size(); i++) {
+            xPoints[i] = nodes.get(i).getX();
+            yPoints[i] = nodes.get(i).getY();
+        }
+    }
+    public void paintComponent( Graphics g ) {
+        super.paintComponent(g);
+        g.drawPolyline(xPoints,yPoints,nPoints);
+    }
+}
 class PolygonsJPanel extends JPanel{
     ArrayList<Polygon> polyList;
     int xMax;
     int yMax;
-    public PolygonsJPanel(ArrayList<Polygon> pList, int x, int y) {
+    ArrayList<Node> nodesList;
+    int[] xPoints;
+    int[] yPoints;
+    int nPoints;
+    public PolygonsJPanel(ArrayList<Polygon> pList, int x, int y, ArrayList<Node> nodes) {
         this.polyList = pList;
         this.xMax = x;
         this.yMax = y;
-
+        this.nodesList = nodes;
+        this.nPoints = nodes.size();
+        this.xPoints = new int[nodesList.size()];
+        this.yPoints = new int[nodesList.size()];
+        fillArrays(nodesList);
     }
+    public void fillArrays(ArrayList<Node> nodes) {
+        for (int i = 0; i<nodes.size(); i++) {
+            xPoints[i] = nodes.get(i).getX();
+            yPoints[i] = nodes.get(i).getY();
+        }
+    }
+
     public void paintComponent( Graphics g )
     {
         super.paintComponent( g ); // call superclass's paintComponent
         for (Polygon polygon : polyList) {
             g.fillPolygon(polygon);
         }
-
+        g.drawPolyline(xPoints,yPoints,nPoints);
     } // end method paintComponent
 
 } // end class PolygonsJPanel
